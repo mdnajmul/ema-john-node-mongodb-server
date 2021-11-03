@@ -28,8 +28,31 @@ async function run() {
     //GET API (Fetch all products from database)
     app.get("/products", async (req, res) => {
       const cursor = productCollection.find({});
-      const products = await cursor.toArray();
-      res.send(products);
+
+      const page = req.query.page;
+      const size = parseInt(req.query.size);
+
+      const count = await cursor.count();
+
+      let products;
+      if (page) {
+        products = await cursor
+          .skip(page * size)
+          .limit(size)
+          .toArray();
+      } else {
+        products = await cursor.toArray();
+      }
+
+      res.send({ count, products });
+    });
+
+    //POST API to get data by keys
+    app.post("/products/byKeys", async (req, res) => {
+      const keys = req.body;
+      const query = { key: { $in: keys } };
+      const products = await productCollection.find(query).toArray();
+      res.json(products);
     });
   } finally {
     //   await client.close();
